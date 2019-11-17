@@ -232,7 +232,7 @@ module Net
         # new Packet object.
         # rubocop:disable Metrics/AbcSize
         def poll_next_packet
-          aad_length = server.hmac.etm ? 4 : 0
+          aad_length = server.hmac.etm || server.hmac.aead ? 4 : 0
 
           if @packet.nil?
             minimum = server.block_size < 4 ? 4 : server.block_size
@@ -240,7 +240,13 @@ module Net
             data = read_available(minimum + aad_length)
 
             # decipher it
-            if server.hmac.etm
+            if server.hmac.aead
+              @packet_length = data.unpack("N").first
+              debug { "packet_length : #{@packet_length}" }
+              @mac_data = data
+              debug { "auth_tag size: #{@mac_data.size}" }
+              @packet = Net::SSH::Buffer.new(server.update_cipher(data[aad_length..-1]))
+            elsif server.hmac.etm || server.hmac.aead
               @packet_length = data.unpack("N").first
               @mac_data = data
               @packet = Net::SSH::Buffer.new(server.update_cipher(data[aad_length..-1]))
@@ -251,10 +257,16 @@ module Net
 
             debug { "decrypt #{@packet_length}"}
           end
+          
+          if server.hmac.aead
+            debug { 'set block_size' }
+            server.set(block_size: 16)
+          end
 
+          debug { "block_size : #{server.block_size}" }
           need = @packet_length + 4 - aad_length - server.block_size
           raise Net::SSH::Exception, "padding error, need #{need} block #{server.block_size}" if need % server.block_size != 0
-
+          debug { "mac_length: #{server.hmac.mac_length}"}
           return nil if available < need + server.hmac.mac_length
 
           if need > 0
