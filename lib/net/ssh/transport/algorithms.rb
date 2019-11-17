@@ -41,7 +41,7 @@ module Net
                   diffie-hellman-group-exchange-sha256
                   diffie-hellman-group14-sha1],
 
-          encryption: %w[aes256-ctr aes192-ctr aes128-ctr],
+          encryption: %w[aes256-gcm@openssh.com aes128-gcm@openssh.com aes256-ctr aes192-ctr aes128-ctr],
 
           hmac: %w[hmac-sha2-512-etm@openssh.com hmac-sha2-256-etm@openssh.com
                    hmac-sha2-512 hmac-sha2-256
@@ -463,6 +463,13 @@ module Net
 
           cipher_client = CipherFactory.get(encryption_client, parameters.merge(iv: iv_client, key: key_client, encrypt: true))
           cipher_server = CipherFactory.get(encryption_server, parameters.merge(iv: iv_server, key: key_server, decrypt: true))
+
+          # RFC5647 : If AES-GCM is selected as the encryption algorithm for a given
+          # tunnel, AES-GCM MUST also be selected as the Message Authentication
+          # Code (MAC) algorithm.  Conversely, if AES-GCM is selected as the MAC
+          # algorithm, it MUST also be selected as the encryption algorithm.
+          hmac_client = encryption_client if cipher_client.authenticated? 
+          hmac_server = encryption_server if cipher_server.authenticated?
 
           mac_client = HMAC.get(hmac_client, mac_key_client, parameters)
           mac_server = HMAC.get(hmac_server, mac_key_server, parameters)

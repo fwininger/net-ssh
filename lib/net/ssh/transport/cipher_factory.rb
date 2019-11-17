@@ -22,6 +22,9 @@ module Net
           "3des-ctr"                    => "des-ede3",
           "blowfish-ctr"                => "bf-ecb",
 
+          'aes256-gcm@openssh.com'      => 'aes-256-gcm',
+          'aes128-gcm@openssh.com'      => 'aes-128-gcm',
+
           'aes256-ctr'                  => 'aes-256-ctr',
           'aes192-ctr'                  => 'aes-192-ctr',
           'aes128-ctr'                  => 'aes-128-ctr',

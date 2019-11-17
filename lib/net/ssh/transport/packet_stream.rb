@@ -129,23 +129,38 @@ module Net
           payload = client.compress(payload)
 
           # the length of the packet, minus the padding
-          actual_length = (client.hmac.etm ? 0 : 4) + payload.bytesize + 1
-
+          actual_length = (client.hmac.etm || client.hmac.aead ? 0 : 4) + payload.bytesize + 1
+          
           # compute the padding length
-          padding_length = client.block_size - (actual_length % client.block_size)
-          padding_length += client.block_size if padding_length < 4
+          padding_length = 16 - (actual_length % 16)
+          padding_length += 16 if padding_length < 4
 
           # compute the packet length (sans the length field itself)
           packet_length = payload.bytesize + padding_length + 1
 
           if packet_length < 16
-            padding_length += client.block_size
+            padding_length += 16
             packet_length = payload.bytesize + padding_length + 1
           end
 
           padding = Array.new(padding_length) { rand(256) }.pack("C*")
 
-          if client.hmac.etm
+          if client.hmac.aead
+            debug { "using aead mode" }
+
+            length_data = [packet_length].pack("N")
+            unencrypted_data = [padding_length, payload, padding].pack("CA*A*")
+
+            debug { "unencrypt size : #{unencrypted_data.size}"}
+            client.cipher.auth_data = length_data
+            encrypted_data = client.update_cipher(unencrypted_data) << client.final_cipher
+
+            mac = client.cipher.auth_tag
+            debug { "auth tag size : #{mac.size}" }
+            message = length_data + encrypted_data + mac
+
+            info { "message size : #{message.size}" }
+          elsif client.hmac.etm
             debug { "using encrypt-then-mac" }
 
             # Encrypt padding_length, payload, and padding. Take MAC
@@ -233,6 +248,8 @@ module Net
               @packet = Net::SSH::Buffer.new(server.update_cipher(data))
               @packet_length = @packet.read_long
             end
+
+            debug { "decrypt #{@packet_length}"}
           end
 
           need = @packet_length + 4 - aad_length - server.block_size
