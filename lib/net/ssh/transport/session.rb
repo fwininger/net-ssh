@@ -258,6 +258,8 @@ module Net
         # options. This is typically used to define the cipher, compression, and
         # hmac algorithms to use when reading packets from the server.
         def configure_server(options={})
+          debug { "server_options: #{options}"}
+          debug { "cipher: #{options[:cipher].inspect}"}
           socket.server.set(options)
         end
 

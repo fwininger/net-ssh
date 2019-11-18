@@ -192,6 +192,8 @@ module Net
     
         def update_next_iv(data, reset=false)
           @next_iv << data
+          puts "toto"*10
+          puts data.size
           @next_iv = @next_iv[@next_iv.size - cipher.iv_len..-1]
     
           if reset

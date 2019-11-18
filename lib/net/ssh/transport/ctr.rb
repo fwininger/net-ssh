@@ -22,7 +22,11 @@ module Net::SSH::Transport
     end
 
     def iv=(iv_s)
-      super unless @was_reset
+      super
+    end
+
+    def auth_data=(auth_data)
+      super #unless @was_reset
     end
   end
 

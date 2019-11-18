@@ -238,10 +238,11 @@ module Net
             minimum = server.block_size < 4 ? 4 : server.block_size
             return nil if available < minimum + aad_length
             data = read_available(minimum + aad_length)
-
+            debug { "data size : #{data.size}"}
             # decipher it
             if server.hmac.aead
               @packet_length = data.unpack("N").first
+              server.cipher.auth_data = [@packet_length].pack("N")
               debug { "packet_length : #{@packet_length}" }
               @mac_data = data
               debug { "auth_tag size: #{@mac_data.size}" }
@@ -264,9 +265,14 @@ module Net
           end
 
           debug { "block_size : #{server.block_size}" }
+          debug { "aaa block size : #{server.cipher.block_size}"}
+          debug { "d packet : #{@packet_length}" }
           need = @packet_length + 4 - aad_length - server.block_size
           raise Net::SSH::Exception, "padding error, need #{need} block #{server.block_size}" if need % server.block_size != 0
           debug { "mac_length: #{server.hmac.mac_length}"}
+          debug { "need : #{need}"}
+          debug { "available : #{available}"}
+
           return nil if available < need + server.hmac.mac_length
 
           if need > 0
@@ -279,12 +285,16 @@ module Net
           # get the hmac from the tail of the packet (if one exists), and
           # then validate it.
           real_hmac = read_available(server.hmac.mac_length) || ""
+          
+          debug { "real_hmac: #{real_hmac.size}" }
+          server.cipher.auth_tag = real_hmac if server.hmac.aead
 
           @packet.append(server.final_cipher)
           padding_length = @packet.read_byte
 
           payload = @packet.read(@packet_length - padding_length - 1)
-
+          
+          unless server.hmac.aead
           my_computed_hmac = if server.hmac.etm
                                server.hmac.digest([server.sequence_number, @mac_data].pack("NA*"))
                              else

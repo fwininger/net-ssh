@@ -62,6 +62,13 @@ module Net
               cipher = Net::SSH::Transport::OpenSSLAESCTR.new(cipher)
             end
           end
+
+          if name =~ /-gcm(@openssh.com)?$/
+            cipher = Net::SSH::Transport::OpenSSLAESCTR.new(cipher)
+          end
+
+          puts "coucou"*10
+          puts name
           cipher.iv = Net::SSH::Transport::KeyExpander.expand_key(cipher.iv_len, options[:iv], options)
     
           key_len = cipher.key_len
