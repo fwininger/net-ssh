@@ -64,13 +64,13 @@ module Net
           end
 
           if name =~ /-gcm(@openssh.com)?$/
-            cipher = Net::SSH::Transport::OpenSSLAESCTR.new(cipher)
+            cipher = Net::SSH::Transport::OpenSSLAESGCM.new(cipher)
           end
 
           puts "coucou"*10
           puts name
           cipher.iv = Net::SSH::Transport::KeyExpander.expand_key(cipher.iv_len, options[:iv], options)
-    
+          puts Net::SSH::Transport::KeyExpander.expand_key(cipher.iv_len, options[:iv], options).each_byte.map { |b| b.to_s(16) }.join
           key_len = cipher.key_len
           cipher.key_len = key_len
           cipher.key = Net::SSH::Transport::KeyExpander.expand_key(key_len, options[:key], options)
@@ -97,7 +97,9 @@ module Net
               case ossl_name
               when /\-ctr/
                 Net::SSH::Transport::OpenSSLAESCTR.block_size
-              else
+              when /\-gcm/
+                Net::SSH::Transport::OpenSSLAESGCM.block_size
+              else                
                 cipher.block_size
               end
     

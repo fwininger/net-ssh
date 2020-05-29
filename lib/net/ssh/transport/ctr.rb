@@ -30,6 +30,35 @@ module Net::SSH::Transport
     end
   end
 
+  class OpenSSLAESGCM < SimpleDelegator
+    def initialize(original)
+      super
+      @was_reset = false
+    end
+
+    def block_size
+      16
+    end
+
+    def self.block_size
+      16
+    end
+
+    def reset
+      @was_reset = true
+    end
+
+    def iv=(iv_s)
+      super
+    end
+
+    def auth_data=(auth_data)
+      super
+    end
+
+    def update()
+  end
+
   #:nodoc:
   # Pure-Ruby implementation of Stateful Decryption Counter(SDCTR) Mode
   # for Block Ciphers. See RFC4344 for detail.

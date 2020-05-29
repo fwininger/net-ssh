@@ -461,6 +461,9 @@ module Net
 
           parameters = { shared: secret, hash: hash, digester: digester }
 
+          debug { "iv_client : #{iv_client.each_byte.map { |b| b.to_s(16) }.join}"}
+          debug { "iv_server : #{iv_server.each_byte.map { |b| b.to_s(16) }.join}"}
+
           cipher_client = CipherFactory.get(encryption_client, parameters.merge(iv: iv_client, key: key_client, encrypt: true))
           cipher_server = CipherFactory.get(encryption_server, parameters.merge(iv: iv_server, key: key_server, decrypt: true))
 

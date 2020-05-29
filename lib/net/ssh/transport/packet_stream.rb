@@ -247,7 +247,7 @@ module Net
               @mac_data = data
               debug { "auth_tag size: #{@mac_data.size}" }
               @packet = Net::SSH::Buffer.new(server.update_cipher(data[aad_length..-1]))
-            elsif server.hmac.etm || server.hmac.aead
+            elsif server.hmac.etm
               @packet_length = data.unpack("N").first
               @mac_data = data
               @packet = Net::SSH::Buffer.new(server.update_cipher(data[aad_length..-1]))
